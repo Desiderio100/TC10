@@ -1,0 +1,194 @@
+#ifndef LISTA_H
+#define LISTA_H
+
+#include <vector>
+#include <iostream>
+#include <stdexcept>
+#include <utility>  // std::swap
+#include <string>
+
+// Definición de Alumno
+struct Alumno {
+    std::string nombre;
+    double calificacion;
+
+    Alumno(const std::string& n, double c) : nombre(n), calificacion(c) {}
+    // Constructor por defecto
+    Alumno() : nombre(""), calificacion(0.0) {}
+};
+
+// Comparador para getMax (por calificación)
+inline bool operator<(const Alumno& a, const Alumno& b) {
+    return a.calificacion < b.calificacion;
+}
+
+// Para imprimir Alumno
+inline std::ostream& operator<<(std::ostream& os, const Alumno& a) {
+    os << a.nombre << " (" << a.calificacion << ")";
+    return os;
+}
+
+template <typename T>
+class Lista {
+private:
+    std::vector<T> data;  // almacenamiento
+    int size;             // cantidad de elementos usados
+
+public:
+    // Ctor: capacidad fija; "size" inicia en 0.
+    explicit Lista(size_t capacidad = 100)
+        : data(capacidad), size(0) {}
+
+    // Inserta al final si hay espacio disponible.
+    void insert(const T& valor) {
+        if (size < static_cast<int>(data.size())) {
+            data[size] = valor;
+            ++size;
+        } else {
+            std::cout << "NO HAY ESPACIO" << std::endl;
+        }
+    }
+
+    // Muestra el último elemento y lo elimina. Si está vacía, mensaje.
+    void removeLast() {
+        if (size == 0) {
+            std::cout << "NO HAY ELEMENTOS" << std::endl;
+            return;
+        }
+        std::cout << data[size - 1] << std::endl;
+        --size; // "Eliminar" equivale a decrementar size.
+    }
+
+    // Devuelve el elemento en la posición (válida).
+    const T& getData(int pos) const {
+        if (pos < 0 || pos >= size) {
+            throw std::out_of_range("Indice fuera de rango");
+        }
+        return data[pos];
+    }
+
+    // Devuelve el número de elementos almacenados.
+    int getSize() const {
+        return size;
+    }
+
+    // Devuelve el valor mayor (requiere T comparable con operator<).
+    T getMax() const {
+        if (size == 0) {
+            throw std::runtime_error("NO HAY ELEMENTOS");
+        }
+        T mx = data[0];
+        for (int i = 1; i < size; ++i) {
+            if (mx < data[i]) {
+                mx = data[i];
+            }
+        }
+        return mx;
+    }
+
+    // Imprime la lista: [pos] - dato
+    void print() const {
+        for (int i = 0; i < size; ++i) {
+            std::cout << "[" << i << "] - " << data[i] << std::endl;
+        }
+    }
+
+    // Invierte el orden de los elementos in-place (sin std::reverse).
+    void invert() {
+        for (int i = 0, j = size - 1; i < j; ++i, --j) {
+            std::swap(data[i], data[j]);
+        }
+    }
+};
+
+#endif // LISTA_H
+
+
+int main() {
+    try {
+        std::cout << "=== Pruebas con Lista<int> ===\n";
+        Lista<int> li(10);  // La capacidad maxima es de 10 
+        li.insert(5); 
+        li.insert(12);
+        li.insert(7);
+        li.insert(42);
+
+        std::cout << "Contenido:\n";
+        li.print();
+
+        std::cout << "Dato en indice 2: " << li.getData(2) << "\n";
+        std::cout << "Tamanio: " << li.getSize() << "\n";
+        std::cout << "Maximo: " << li.getMax() << "\n";
+
+        std::cout << "Eliminar ultimo (se mostrara y eliminara): ";
+        li.removeLast(); // muestra 42 y lo elimina
+        std::cout << "Contenido tras eliminar:\n";
+        li.print();
+
+        std::cout << "Invertir lista de int:\n";
+        li.invert();
+        li.print();
+
+        std::cout << "\n=== Pruebas con Lista<std::string> ===\n";
+        Lista<std::string> ls(10);
+        ls.insert("pera");
+        ls.insert("manzana");
+        ls.insert("uva");
+        ls.insert("kiwi");
+
+        std::cout << "Contenido:\n";
+        ls.print();
+        std::cout << "Dato en indice 1: " << ls.getData(1) << "\n";
+        std::cout << "Tamanio: " << ls.getSize() << "\n";
+        std::cout << "Maximo (lexicografico): " << ls.getMax() << "\n";
+
+        std::cout << "Eliminar ultimo (se mostrara y eliminara): ";
+        ls.removeLast();
+        std::cout << "Contenido tras eliminar:\n";
+        ls.print();
+
+        std::cout << "Invertir lista de string:\n";
+        ls.invert();
+        ls.print();
+    // Prueba con Alumno 
+        std::cout << "\n=== Pruebas con Lista<Alumno> ===\n";
+        Lista<Alumno> la(10);
+        la.insert({"Ana", 88.5});
+        la.insert({"Luis", 91.0});
+        la.insert({"Mar", 76.0});
+        la.insert({"Sofi", 91.5});
+
+        std::cout << "Contenido:\n";
+        la.print();
+        std::cout << "Tamanio: " << la.getSize() << "\n";
+
+        // Máximo por calificación (gracias a operator<)
+        Alumno top = la.getMax();
+        std::cout << "Alumno con mayor calificacion: " << top << "\n";
+
+        std::cout << "Eliminar ultimo (se mostrara y eliminara): ";
+        la.removeLast();
+        std::cout << "Contenido tras eliminar:\n";
+        la.print();
+
+        std::cout << "Invertir lista de alumnos:\n";
+        la.invert();
+        la.print();
+
+        // Prueba de mensajes de borde:
+        std::cout << "\n=== Pruebas borde removeLast en lista vacia ===\n";
+        Lista<int> vacia(2);
+        vacia.removeLast(); // NO HAY ELEMENTOS
+
+        std::cout << "\n=== Prueba de no hay espacio en insert ===\n";
+        Lista<int> cap2(2);
+        cap2.insert(1);
+        cap2.insert(2);
+        cap2.insert(3); // NO HAY ESPACIO
+    }
+    catch (const std::exception& ex) {
+        std::cerr << "Excepcion: " << ex.what() << std::endl;
+    }
+
+    return 0;
+}

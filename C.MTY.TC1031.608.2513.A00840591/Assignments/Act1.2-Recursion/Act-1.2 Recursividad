@@ -1,0 +1,177 @@
+#include <iostream>
+#include <string>
+#include <cctype>
+#include <cmath>
+
+// 1) Suma de números naturales
+
+long long sumIterative(long long n) {
+    long long sum = 0;
+    for (long long i = 1; i <= n; ++i) sum += i;
+    return sum;
+}
+
+long long sumRecursive(long long n) {
+    if (n <= 0) return 0;
+    return n + sumRecursive(n - 1);
+}
+
+long long sumFormula(long long n) {
+    return 1LL * n * (n + 1) / 2;
+}
+
+// 2) Números de Fibonacci
+
+long long fibonacciIterative(int n)  {
+    if (n <= 0) return 0;
+    if (n == 1) return 1;
+    long long a = 0, b = 1, c;
+    for (int i = 2; i <= n; ++i) {
+        c = a + b;
+        a = b;
+        b = c;
+    }
+    return b;
+}
+
+long long fibonacciRecursive(int n){
+    if (n <= 0) return 0;
+    if (n == 1) return 1;
+    return fibonacciRecursive(n - 1) + fibonacciRecursive(n - 2);
+}
+
+// 3) Crecimiento de bacterias
+
+long long bacteriasIterative(int n) {
+    long long bact = 1;
+    for (int i = 1; i <= n; ++i){
+        long long nac = (bact * 378) / 100; 
+        long long def = (bact * 234) / 100; 
+        bact = bact + nac - def;
+        if (bact < 0) bact = 0;
+    }
+    return bact;
+}
+
+long long bacteriasRecursiveHelper(int day, long long bact_prev) {
+    if (day == 0) return bact_prev;
+    long long nac = (bact_prev * 378) / 100;
+    long long def = (bact_prev * 234) / 100;
+    long long next_bact = bact_prev + nac - def;
+    if (next_bact < 0) next_bact = 0;
+    return bacteriasRecursiveHelper(day - 1, next_bact);
+}
+
+long long bacteriasRecursive(int n) {
+    if (n <= 0) return 1;
+    return bacteriasRecursiveHelper(n, 1);
+}
+
+
+// 4) Inversión bancaria
+
+double investmentIterative(double amount, int months) {
+    const double rate = 0.1875; 
+    double A = amount;
+    for (int i = 0; i < months; ++i) {
+        A *= (1.0 + rate);
+    }
+    return A;
+}
+
+double investmentRecursive(double amount, int months) {
+    const double rate = 0.1875; 
+    if (months <= 0) return amount;
+    return investmentRecursive(amount * (1.0 + rate), months - 1);
+}
+
+// 5) Potencia base^exponente
+
+double powIterative(double base, int exponent) {
+    if (exponent == 0) return 1.0;
+    bool neg = (exponent < 0);
+    long long e = std::llabs((long long)exponent);
+
+    double res = 1.0;
+    for (long long i = 0; i < e; ++i) res *= base;
+    return neg ? 1.0 / res : res;
+}
+
+double powRecursive(double base, int exponent) {
+    if (exponent == 0) return 1.0;
+    if (exponent < 0) return 1.0 / powRecursive(base, -exponent);
+    // (opcional) aceleración por exponenciación rápida
+    if (exponent % 2 == 0) {
+        double half = powRecursive(base, exponent / 2);
+        return half * half;
+    } else {
+        return base * powRecursive(base, exponent - 1);
+    }
+}
+
+
+// 6) Palíndromo 
+
+static std::string normalize(const std::string& s) {
+    std::string t;
+    t.reserve(s.size());
+    for (unsigned char ch : s) {
+        if (std::isalnum(ch)) t.push_back((char)std::tolower(ch));
+    }
+    return t;
+}
+
+bool isPalindromeRecursiveHelper(const std::string& s, int i, int j) {
+    if (i >= j) return true;
+    if (s[i] != s[j]) return false;
+    return isPalindromeRecursiveHelper(s, i + 1, j - 1);
+}
+
+bool isPalindromeRecursive(const std::string& word) {
+    std::string t = normalize(word);
+    if (t.empty()) return true;
+    return isPalindromeRecursiveHelper(t, 0, (int)t.size() - 1);
+}
+
+
+//Main
+
+int main() {
+    std::cout << "=== Pruebas rápidas ===\n";
+
+    // 1) Sumas
+    std::cout << "sumIterative(10) = " << sumIterative(10) << "\n";
+    std::cout << "sumRecursive(10) = " << sumRecursive(10) << "\n";
+    std::cout << "sumFormula(10)   = " << sumFormula(10)   << "\n\n";
+
+    // 2) Fibonacci
+    std::cout << "fibonacciIterative(10) = " << fibonacciIterative(10) << "\n";
+    std::cout << "fibonacciRecursive(10) = " << fibonacciRecursive(10) << "\n\n";
+
+    // 3) Bacterias
+    int dias = 5;
+    std::cout << "bacteriasIterative(" << dias << ") = " << bacteriasIterative(dias) << "\n";
+    std::cout << "bacteriasRecursive(" << dias << ") = " << bacteriasRecursive(dias) << "\n\n";
+
+    // 4) Inversión
+    double monto = 1000.0;
+    int meses = 3;
+    std::cout.setf(std::ios::fixed); std::cout.precision(2);
+    std::cout << "investmentIterative(1000, 3) = " << investmentIterative(monto, meses) << "\n";
+    std::cout << "investmentRecursive(1000, 3) = " << investmentRecursive(monto, meses) << "\n\n";
+    std::cout.unsetf(std::ios::fixed); std::cout.precision(6);
+
+    // 5) Potencia
+    std::cout << "powIterative(2, 10)  = " << powIterative(2, 10)  << "\n";
+    std::cout << "powRecursive(2, -3)  = " << powRecursive(2, -3)  << "\n\n";
+
+    // 6) Palíndromo
+    std::cout << std::boolalpha;
+    std::cout << "isPalindromeRecursive(\"oso\")    = " << isPalindromeRecursive("oso")    << "\n";
+    std::cout << "isPalindromeRecursive(\"radar\")  = " << isPalindromeRecursive("radar")  << "\n";
+    std::cout << "isPalindromeRecursive(\"Casa\")   = " << isPalindromeRecursive("Casa")   << "\n";
+    std::cout << "isPalindromeRecursive(\"Anita lava la tina\") = "
+              << isPalindromeRecursive("Anita lava la tina") << "\n";
+
+    return 0;
+}
