@@ -1,0 +1,208 @@
+#include <algorithm>
+#include <chrono>
+#include <iostream>
+#include <limits>
+#include <random>
+#include <string>
+#include <unordered_set>
+#include <vector>
+using namespace std;
+
+using ll = long long;
+
+// búsqueda secuencial con conteo de comparaciones
+int busquedaSecuencial(const vector<int>& arreglo, int buscado, ll& comparaciones) {
+    comparaciones = 0;
+    for (size_t i = 0; i < arreglo.size(); ++i) {
+        ++comparaciones;
+        if (arreglo[i] == buscado) return (int)i;
+    }
+    return -1;
+}
+
+// búsqueda binaria iterativa con conteo de comparaciones
+int busquedaBinariaIterativa(const vector<int>& arreglo, int buscado, ll& comparaciones) {
+    comparaciones = 0;
+    int izq = 0, der = (int)arreglo.size() - 1;
+    while (izq <= der) {
+        int medio = izq + (der - izq) / 2;
+        ++comparaciones;
+        if (arreglo[medio] == buscado) return medio;
+        ++comparaciones;
+        if (arreglo[medio] < buscado) izq = medio + 1;
+        else der = medio - 1;
+    }
+    return -1;
+}
+
+// búsqueda binaria recursiva con conteo de comparaciones
+int busquedaBinariaRecursiva(const vector<int>& arreglo, int izq, int der, int buscado, ll& comparaciones) {
+    if (izq > der) return -1;
+    int medio = izq + (der - izq) / 2;
+    ++comparaciones;
+    if (arreglo[medio] == buscado) return medio;
+    ++comparaciones;
+    if (arreglo[medio] < buscado)
+        return busquedaBinariaRecursiva(arreglo, medio + 1, der, buscado, comparaciones);
+    return busquedaBinariaRecursiva(arreglo, izq, medio - 1, buscado, comparaciones);
+}
+
+// función auxiliar para binaria recursiva
+int binariaRec(const vector<int>& arreglo, int buscado, ll& comparaciones) {
+    comparaciones = 0;
+    return busquedaBinariaRecursiva(arreglo, 0, (int)arreglo.size() - 1, buscado, comparaciones);
+}
+
+// encuentra letra única usando búsqueda secuencial
+char letraUnicaSecuencial(const string& cadena, ll& comparaciones) {
+    comparaciones = 0;
+    int n = (int)cadena.size();
+    for (int i = 0; i + 1 < n; i += 2) {
+        ++comparaciones;
+        if (cadena[i] != cadena[i + 1]) return cadena[i];
+    }
+    return cadena.back();
+}
+
+// encuentra letra única usando búsqueda binaria
+char letraUnicaBinaria(const string& cadena, ll& comparaciones) {
+    comparaciones = 0;
+    int izq = 0, der = (int)cadena.size() - 1;
+    while (izq < der) {
+        int medio = izq + (der - izq) / 2;
+        if (medio % 2 == 1) --medio;
+        ++comparaciones;
+        if (cadena[medio] == cadena[medio + 1]) izq = medio + 2;
+        else der = medio;
+    }
+    return cadena[izq];
+}
+
+// genera arreglo ordenado de enteros únicos
+vector<int> generarArregloOrdenado(int tam, int minValor, int maxValor, mt19937_64& azar) {
+    unordered_set<int> valoresUnicos;
+    valoresUnicos.reserve(tam * 2);
+    uniform_int_distribution<int> dist(minValor, maxValor);
+    while ((int)valoresUnicos.size() < tam) valoresUnicos.insert(dist(azar));
+    vector<int> arreglo(valoresUnicos.begin(), valoresUnicos.end());
+    sort(arreglo.begin(), arreglo.end());
+    return arreglo;
+}
+
+// genera 100 consultas (50 presentes y 50 ausentes)
+vector<int> generarConsultas(const vector<int>& arreglo, int minValor, int maxValor, mt19937_64& azar) {
+    vector<int> consultas;
+    uniform_int_distribution<int> distIndice(0, (int)arreglo.size() - 1);
+    for (int i = 0; i < 50; ++i) consultas.push_back(arreglo[distIndice(azar)]);
+    uniform_int_distribution<int> distValor(minValor, maxValor);
+    while ((int)consultas.size() < 100) {
+        int x = distValor(azar);
+        if (!binary_search(arreglo.begin(), arreglo.end(), x)) consultas.push_back(x);
+    }
+    shuffle(consultas.begin(), consultas.end(), azar);
+    return consultas;
+}
+
+// ejecuta pruebas con 3 tamaños diferentes de arreglo
+void correrBenchmarks() {
+    vector<int> tamanos = { 1000, 10000, 100000 };
+    const int minValor = 1, maxValor = 1000000;
+    mt19937_64 azar(12345); // semilla fija
+
+    for (int tam : tamanos) {
+        auto arreglo = generarArregloOrdenado(tam, minValor, maxValor, azar);
+        auto consultas = generarConsultas(arreglo, minValor, maxValor, azar);
+
+        long double tiempoTotalSec = 0, tiempoTotalBinIt = 0, tiempoTotalBinRec = 0, tiempoTotalStd = 0;
+        long double comparacionesTotalSec = 0, comparacionesTotalBinIt = 0, comparacionesTotalBinRec = 0;
+        ll minCompSec = LLONG_MAX, maxCompSec = 0;
+        ll minCompBinIt = LLONG_MAX, maxCompBinIt = 0;
+        ll minCompBinRec = LLONG_MAX, maxCompBinRec = 0;
+
+        for (int buscado : consultas) {
+            ll comparaciones;
+            auto inicio = chrono::steady_clock::now();
+            busquedaSecuencial(arreglo, buscado, comparaciones);
+            auto fin = chrono::steady_clock::now();
+            tiempoTotalSec += chrono::duration_cast<chrono::microseconds>(fin - inicio).count();
+            comparacionesTotalSec += comparaciones;
+            minCompSec = min(minCompSec, comparaciones);
+            maxCompSec = max(maxCompSec, comparaciones);
+
+            inicio = chrono::steady_clock::now();
+            busquedaBinariaIterativa(arreglo, buscado, comparaciones);
+            fin = chrono::steady_clock::now();
+            tiempoTotalBinIt += chrono::duration_cast<chrono::microseconds>(fin - inicio).count();
+            comparacionesTotalBinIt += comparaciones;
+            minCompBinIt = min(minCompBinIt, comparaciones);
+            maxCompBinIt = max(maxCompBinIt, comparaciones);
+
+            inicio = chrono::steady_clock::now();
+            binariaRec(arreglo, buscado, comparaciones);
+            fin = chrono::steady_clock::now();
+            tiempoTotalBinRec += chrono::duration_cast<chrono::microseconds>(fin - inicio).count();
+            comparacionesTotalBinRec += comparaciones;
+            minCompBinRec = min(minCompBinRec, comparaciones);
+            maxCompBinRec = max(maxCompBinRec, comparaciones);
+
+            inicio = chrono::steady_clock::now();
+            binary_search(arreglo.begin(), arreglo.end(), buscado);
+            fin = chrono::steady_clock::now();
+            tiempoTotalStd += chrono::duration_cast<chrono::microseconds>(fin - inicio).count();
+        }
+
+        // imprimir resultados por tamaño
+        cout << "n = " << tam << "\n";
+        cout << "Secuencial: avg_us = " << tiempoTotalSec / 100.0 << " avg_comp = " << comparacionesTotalSec / 100.0
+             << " min = " << minCompSec << " max = " << maxCompSec << "\n";
+        cout << "Binaria (iter): avg_us = " << tiempoTotalBinIt / 100.0 << " avg_comp = " << comparacionesTotalBinIt / 100.0
+             << " min = " << minCompBinIt << " max = " << maxCompBinIt << "\n";
+        cout << "Binaria (rec):  avg_us = " << tiempoTotalBinRec / 100.0 << " avg_comp = " << comparacionesTotalBinRec / 100.0
+             << " min = " << minCompBinRec << " max = " << maxCompBinRec << "\n";
+        cout << "std::binary_search avg_us = " << tiempoTotalStd / 100.0 << "\n";
+
+        // casos controlados
+        ll comparaciones;
+        busquedaSecuencial(arreglo, arreglo.front(), comparaciones);
+        cout << "Mejor caso secuencial: comps = " << comparaciones << "\n";
+        busquedaSecuencial(arreglo, arreglo.back(), comparaciones);
+        cout << "Peor caso secuencial: comps = " << comparaciones << "\n";
+        busquedaSecuencial(arreglo, 1000001, comparaciones);
+        cout << "Secuencial no encuentra: comps = " << comparaciones << "\n";
+        busquedaBinariaIterativa(arreglo, 1000001, comparaciones);
+        cout << "Binaria iter no encuentra: comps = " << comparaciones << "\n";
+        binariaRec(arreglo, 1000001, comparaciones);
+        cout << "Binaria rec no encuentra: comps = " << comparaciones << "\n\n";
+    }
+}
+
+// menú principal
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    while (true) {
+        cout << "\n1) Benchmarks\n";
+        cout << "2) Único en bloques\n";
+        cout << "0) Salir\n";
+        cout << "Opción: ";
+        int opcion;
+        if (!(cin >> opcion)) break;
+
+        if (opcion == 1) {
+            correrBenchmarks(); // ejecutar análisis de búsqueda
+        } else if (opcion == 2) {
+            int numCadenas;
+            cin >> numCadenas;
+            while (numCadenas--) {
+                string cadena;
+                cin >> cadena;
+                ll comparacionesSec = 0, comparacionesBin = 0;
+                char letraSec = letraUnicaSecuencial(cadena, comparacionesSec);
+                char letraBin = letraUnicaBinaria(cadena, comparacionesBin);
+                cout << letraSec << " " << comparacionesSec << " " << letraBin << " " << comparacionesBin << "\n";
+            }
+        }
+    }
+    return 0;
+}
